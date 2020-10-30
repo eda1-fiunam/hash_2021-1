@@ -165,7 +165,7 @@ int Search( Map* map, int key )
    }
 }
 
-bool Delete( Map* map, int key )
+bool Remove( Map* map, int key )
 {
    assert( map );
    assert( map->len > 0 );
@@ -205,7 +205,7 @@ int main()
 
    assert( Search( mapa, 100 ) == -1 ); // no está
 
-   assert( Delete( mapa, 123 ) == true ); // no está implementada, va a fallar
+   assert( Remove( mapa, 123 ) == true ); // no está implementada, va a fallar
 
    Destroy( mapa );
    mapa = NULL;
