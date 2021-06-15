@@ -21,6 +21,10 @@
 #include <stdbool.h>
 #include <assert.h>
 
+#include <stdint.h>
+// para int32_t, uint32_t, etc.
+
+
 //          Esta versión sólo soporta llaves (keys) enteras positivas.
 
 
@@ -28,18 +32,28 @@ enum{ EMPTY_CELL = -2, DELETED_CELL = -1 };
 
 typedef struct
 {
-   int   bar_code;
-   char  name[ 32 ];
-   float price;
+   int32_t bar_code;
+   char    name[ 32 ];
+   float   price;
 } Product;
 
 typedef struct
 {
    /**
+    * Guarda la llave de indexado. En este ejemplo dicha llave es el código de
+    * barras (bar_code). Lo necesitamos para cuando toque resolver colisiones.
+    * Aunque en este ejemplo no aplica, la key podría ser negativa, por eso está
+    * declarada como entero sin signo.
+    */
+   int32_t key;
+
+   /**
     * Guarda el índice del producto en la tabla de productos del cliente.
     * EMPTY_CELL indica que la entrada está libre, y DELETED_CELL que la entrada fue borrada. 
+    * Aunque los índices siempre son positivos, vamos a utilizar valores
+    * negativos como centinelas, por eso está declarada como entero sin signo.
     */
-   int index;
+   int32_t index;
 } Table_entry;
 
 
@@ -73,7 +87,11 @@ Hash_table* HT_New( size_t size )
          ht = NULL;
 
       } else {
-         for( int i = 0; i < ht->size; ++i ) ht->table[ i ].index = EMPTY_CELL;
+         for( int i = 0; i < ht->size; ++i ) {
+
+            ht->table[ i ].index = EMPTY_CELL;
+            ht->table[ i ].key = 0;
+         }
       }
    }
 
@@ -93,7 +111,7 @@ void HT_Delete( Hash_table** ht )
    assert( ht );
 
    free( (*ht)->table );
-   free( ht );
+   free( *ht );
    *ht = NULL;
 }
 
@@ -103,201 +121,91 @@ int h( int key, int m )
    return key % m;
 }
 
+static void print_table_hash( const Hash_table* ht )
+{
+   fprintf( stderr, "\nSize: %ld\n", ht->size );
+   fprintf( stderr, "Len: %ld\n", ht->len );
+   for( size_t i = 0; i < ht->size; ++i ){
+      fprintf( stderr, "[%02ld](%d, %d)\n", i, ht->table[ i ].key, ht->table[ i ].index );
+   }
+   fprintf( stderr, "\n" );
+}
+
 // es la función de resolución de colisiones
 int probe( int key, int i )
 {
    return i + 1;
 }
 
+bool HT_Insert( Hash_table* ht, int32_t key, int32_t idx )
+{
+   assert( ht );
+   assert( ht->len < ht->size );
+
+   int pos;
+   // índice que se actualizará en cada colisión
+
+   int home = pos = h( key, ht->size );
+   // calcula una hash key base
+
+   fprintf( stderr, "Calculé el valor hash: %d para la llave: %d\n", pos, key );
+   // información de depuración
+
+
+   int i = 0;
+
+   // si el slot está desocupado, se salta el while;
+   // en caso contrario entra a buscar uno:
+   while( ht->table[ pos ].index >= 0 ){
+
+      // no se aceptan duplicados:
+      if( ht->table[ pos ].key == key ){
+         fprintf( stderr, "Error: Llave duplicada\n" );
+         return false;
+      }
+
+      pos = ( home + probe( key, i ) ) % ht->size;
+      fprintf( stderr, "Colisión. Recalculé el valor hash: %d para la llave: %d\n", pos, key );
+
+      ++i;
+      // el incremento de esta variable depende del método de resolución de
+      // colisiones utilizado
+   }
+
+   ht->table[ pos ].key = key;
+   ht->table[ pos ].index = idx;
+
+   ++ht->len;
+
+   return true;
+}
 
 //----------------------------------------------------------------------
 // Driver program 
 //----------------------------------------------------------------------
 int main()
 {
+   Product productos[ 5 ] =
+   {
+      { 1000, "Gansito", 9.0 },
+      { 2000, "Crema", 16.5 },
+      { 3000, "Arroz", 28.5 },
+      { 4000, "Papitas", 14.0 },
+      { 5000, "Detergente", 25.0 },
+   };
+
    Hash_table* tabla = HT_New( 17 );
 
+   assert( tabla );
+   // el programa se detiene si la tabla no se pudo crear
+
+   print_table_hash( tabla );
+
+   assert( HT_Insert( tabla, 3000, 2 ) == true );
+
+   print_table_hash( tabla );
+
    HT_Delete( &tabla );
-   assert( tabla != NULL );
+   assert( tabla == NULL );
 }
-
-#if 0 
-/**
- * @brief Crea una tabla Hash
- *
- * @param size El número de elementos para el arreglo subyacente
- *
- * @return Una referencia a un objeto del tipo Map
- */
-Map* Create( int size )
-{
-   Map* m = malloc( sizeof( Map ) );
-   if( m != NULL ){
-      m->len = 0;
-      m->size = size;
-      m->table = malloc( m->size * sizeof( int ) );
-      if( m->table == NULL ){
-         free( m );
-      } else{
-         for( int i = 0; i < m->size; ++i ) m->table[ i ] = EMPTY_CELL;
-         // inicializa todos los slots a "vacío"
-      }
-   }
-   return m;
-}
-
-/**
- * @brief Destruye la tabla Hash
- *
- * @param map Referencia a un objeto Map
- */
-void Destroy( Map* map )
-{
-   assert( map );
-
-   free( map->table );
-}
-
-// Es la función hash
-int h( int key, int m )
-{
-   return key % m;
-}
-
-// es la función de resolución de colisiones
-int probe( int key, int i )
-{
-   return i + 1;
-}
-
-/**
- * @brief Inserta una llave (key) en la tabla Hash. En una aplicación del mundo
- * real se deberían guardar tanto la llave (key) como sus datos asociados
- * (value). En este ejemplo sólo se guarda la llave.
- *
- * @param map Referencia a un objeto Map
- * @param key La llave asociada a los datos. En este ejemplo LA LLAVE DEBE SER
- * ENTERA POSITIVA, INCLUYENDO EL CERO
- *
- * @return true si el valor (la llave en este ejemplo) se insertó en la tabla
- * hash; false en caso de estar duplicada la llave.
- */
-bool Insert( Map* map, int key )
-{
-   assert( map );
-   assert( map->len < map->size );
-
-   int pos;
-   int home = pos = h( key, map->size );
-   printf( "Calculé el valor hash: %d para la llave: %d\n", pos, key );
-
-   int i = 0;
-
-   while( map->table[ pos ] >= 0 ){
-   // si el slot está ocupado, entonces tiene el valor de alguna llave,
-   // y éstas son enteras positivas
-
-      pos = ( home + probe( key, i ) ) % map->size;
-      printf( "  Recalculé el valor hash: %d para la llave: %d\n", pos, key );
-
-      if( map->table[ pos ] == key ) return false;
-      // no se aceptan duplicados
-
-      ++i;
-   }
-
-   map->table[ pos ] = key;
-   ++map->len;
-
-   return true;
-}
-
-/**
- * @brief Devuelve el valor asociado a key. En este ejemplo se devuelve el mismo
- *        valor de key en caso de encontrarse en la tabla.
- *
- * @param map Referencia a un objeto Map
- * @param key La llave asociada a los datos que se están buscando
- *
- * @return el mismo valor key en caso de encontrarse en la tabla. -1 en caso
- *         contrario.
- */
-int Search( Map* map, int key )
-{
-   assert( map );
-   assert( map->len > 0 );
-
-   int home = h( key, map->size );
-   int pos = home;
-
-   printf( "Calculé el valor hash: %d para la llave: %d\n", pos, key );
-
-   int i = 0;
-
-   while( map->table[ pos ] != EMPTY_CELL && map->table[ pos ] != key ){
-
-      pos = ( home + probe( key, i ) ) % map->size;
-      printf( "  Recalculé el valor hash: %d para la llave: %d\n", pos, key );
-
-      ++i;
-   }
-
-   if( map->table[ pos ] == key ){
-   
-      return map->table[ pos ];
-      // en una aplicación del mundo real debería devolver los datos (value)
-      // asociados a la llave (key), pero en este ejemplo, el propio valor de
-      // key es el "value"
-
-   } else{
-      return -1;
-   }
-}
-
-bool Remove( Map* map, int key )
-{
-   assert( map );
-   assert( map->len > 0 );
-
-   // busca el slot con la llave (prácticamente es el mismo código de Search())
-
-   // si no existe deberías terminar el programa inmediatamente (es un error borrar 
-   // algo que no existe) pero en este ejemplo, y para poder realizar pruebas
-   // unitarias (assert()), debes avisar que el slot no existe devolviendo "false"
-
-   // si sí está, marca el slot como DELETED_CELL
-
-   // decrementa el contador de slots ocupados
-
-   // devuelve "true"
-
-   return false;
-}
-
-
-int main()
-{
-   Map* mapa = Create( 17 );
-
-   if( mapa == NULL ){
-      printf( "Error creando la tabla hash.\n" );
-      exit( 1 );
-   }
-
-   assert( Insert( mapa, 123 ) == true );
-   assert( Insert( mapa, 170 ) == true );
-   assert( Insert( mapa, 340 ) == true );
-   assert( Insert( mapa, 510 ) == true );
-   assert( Insert( mapa, 510 ) == false ); // duplicado
-
-   assert( Search( mapa, 123 ) == 123 ); // sí está
-
-   assert( Search( mapa, 100 ) == -1 ); // no está
-
-   assert( Remove( mapa, 123 ) == true ); // no está implementada, va a fallar
-
-   Destroy( mapa );
-   mapa = NULL;
-}
-#endif  
 
