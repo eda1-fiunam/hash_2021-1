@@ -37,6 +37,17 @@ typedef struct
    float   price;
 } Product;
 
+void Product_Print( Product* p )
+{
+   printf( 
+      "Barcode: %d\n"
+      "   Name: %s\n"
+      "  Price: $%0.2f\n\n",
+      p->bar_code, p->name, p->price );
+}
+
+
+
 typedef struct
 {
    /**
@@ -180,6 +191,48 @@ bool HT_Insert( Hash_table* ht, int32_t key, int32_t idx )
    return true;
 }
 
+/**
+ * @brief Devuelve el índice idx en la tabla de productos correspondiente al
+ * código de barras, key.
+ *
+ * @param ht Tabla hash
+ * @param key El código de barras
+ *
+ * @return El índice |idx| en la tabla de productos, o\n
+ *         -1 si la celda calculada en la tabla hash está vacía, o\n
+ *         -2 no se encontró
+ *
+ * @pre La tabla existe.
+ * @pre La tabla no está vacía.
+ */
+int32_t HT_Search( Hash_table* ht, int32_t key )
+{
+   assert( ht );
+   assert( ht->len > 0 );
+
+   int home = h( key, ht->size );
+   int pos = home;
+
+   fprintf( stderr, "Calculé el valor hash: %d para la llave: %d\n", pos, key );
+
+   int i = 0;
+
+   if( ht->table[ pos ].index == EMPTY_CELL ) return -1;
+   // celda vacía: el producto no existe en la tabla hash
+
+   // si la key en la celda coincide con la key buscada, se salta el while;
+   // en caso contrario entra a buscar una coincidencia:
+   while( ht->table[ pos ].key != key ){    
+
+      pos = ( home + probe( key, i ) ) % ht->size;
+      fprintf( stderr, "Celda ocupada: Recalculé el valor hash: %d para la llave: %d\n", pos, key );
+      
+      ++i;
+   }
+
+   return( ht->table[ pos ].key == key ? ht->table[ pos ].index : -2 );
+}
+
 //----------------------------------------------------------------------
 // Driver program 
 //----------------------------------------------------------------------
@@ -199,7 +252,7 @@ int main()
    assert( tabla );
    // el programa se detiene si la tabla no se pudo crear
 
-   print_table_hash( tabla );
+//   print_table_hash( tabla );
 
    for( size_t i = 0; i < 5; ++i ){
       HT_Insert( tabla, productos[ i ].bar_code, i );
@@ -207,6 +260,11 @@ int main()
    }
 
    print_table_hash( tabla );
+
+   int32_t idx = HT_Search( tabla, 5000 );
+   assert( idx == 4 ); // esperamos el índice 4
+   Product_Print( &productos[ idx ] );
+
 
    HT_Delete( &tabla );
    assert( tabla == NULL );
