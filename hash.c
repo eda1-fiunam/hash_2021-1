@@ -74,6 +74,15 @@ Hash_table* HT_New( size_t size )
    // el cliente es responsable de verificar que efectivamente la tabla se creó
 }
 
+void HT_Delete( Hash_table** ht )
+{
+   assert( ht );
+
+   free( (*ht)->table );
+   free( ht );
+   *ht = NULL;
+}
+
 
 #if 0 
 /**
