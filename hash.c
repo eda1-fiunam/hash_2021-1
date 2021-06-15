@@ -205,7 +205,7 @@ bool HT_Insert( Hash_table* ht, int32_t key, int32_t idx )
  * @pre La tabla existe.
  * @pre La tabla no está vacía.
  */
-int32_t HT_Search( Hash_table* ht, int32_t key )
+int32_t HT_Search( const Hash_table* ht, int32_t key )
 {
    assert( ht );
    assert( ht->len > 0 );
@@ -233,16 +233,28 @@ int32_t HT_Search( Hash_table* ht, int32_t key )
    return( ht->table[ pos ].key == key ? ht->table[ pos ].index : -2 );
 }
 
+bool HT_IsEmpty( const Hash_table* ht )
+{
+   return ht->len == 0;
+}
+
+bool HT_IsFull( const Hash_table* ht )
+{
+   return ht->len == ht->size;
+}
+
+#define MAX_PRODUCTS 5
+
 //----------------------------------------------------------------------
 // Driver program 
 //----------------------------------------------------------------------
 int main()
 {
-   Product productos[ 5 ] =
+   Product productos[ MAX_PRODUCTS ] =
    {
-      { 1000, "Gansito", 9.0 },
-      { 2000, "Crema", 16.5 },
-      { 3000, "Arroz", 28.5 },
+      { 1000, "Gansito", 9.0 },     // [0]
+      { 2000, "Crema", 16.5 },      // [1]
+      { 3000, "Arroz", 28.5 },      // ...
       { 4000, "Papitas", 14.0 },
       { 5000, "Detergente", 25.0 },
    };
@@ -252,11 +264,18 @@ int main()
    assert( tabla );
    // el programa se detiene si la tabla no se pudo crear
 
+   assert( HT_IsEmpty( tabla ) == true );
+   // la tabla recién se creó, debe estar vacía
+
 //   print_table_hash( tabla );
 
-   for( size_t i = 0; i < 5; ++i ){
-      HT_Insert( tabla, productos[ i ].bar_code, i );
-      //    HASH_TABLE       KEY                 IDX 
+
+   for( size_t i = 0; i < MAX_PRODUCTS && !HT_IsFull( tabla ); ++i ){
+
+      HT_Insert( 
+         tabla,                   // tabla hash
+         productos[ i ].bar_code, // key
+         i );                     // idx
    }
 
    print_table_hash( tabla );
