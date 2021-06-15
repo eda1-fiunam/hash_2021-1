@@ -28,11 +28,54 @@ enum{ EMPTY_CELL = -2, DELETED_CELL = -1 };
 
 typedef struct
 {
-	int* table;    ///< Es la tabla hash
-	int  size;     ///< Es el número máximo de elementos en la tabla
-	int  len;      ///< Es el número actual de elementos en la tabla
-} Map;
+   int   bar_code;
+   char  name[ 32 ];
+   float price;
+} Product;
 
+typedef struct
+{
+   /**
+    * Guarda el índice del producto en la tabla de productos del cliente.
+    * EMPTY_CELL indica que la entrada está libre, y DELETED_CELL que la entrada fue borrada. 
+    */
+   int index;
+} Table_entry;
+
+
+typedef struct
+{
+	Table_entry* table; ///< Es la tabla hash
+	size_t  size;       ///< Es el número máximo de elementos en la tabla
+	size_t  len;        ///< Es el número actual de elementos en la tabla
+} Hash_table;
+
+
+Hash_table* HT_New( size_t size )
+{
+   Hash_table* ht = ( Hash_table* )malloc( sizeof( Hash_table ) );
+   if( NULL != ht ) {
+
+      ht->len = 0;
+      ht->size = size;
+
+      ht->table = ( Table_entry* ) malloc( size * sizeof( Table_entry ) );
+      if( NULL == ht->table ){
+
+         free( ht );
+         ht = NULL;
+
+      } else {
+         for( int i = 0; i < ht->size; ++i ) ht->table[ i ].index = EMPTY_CELL;
+      }
+   }
+
+   return ht;
+   // el cliente es responsable de verificar que efectivamente la tabla se creó
+}
+
+
+#if 0 
 /**
  * @brief Crea una tabla Hash
  *
@@ -209,4 +252,10 @@ int main()
 
    Destroy( mapa );
    mapa = NULL;
+}
+#endif  
+
+int main()
+{
+
 }
