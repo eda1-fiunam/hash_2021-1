@@ -201,7 +201,10 @@ int main()
 
    print_table_hash( tabla );
 
-   assert( HT_Insert( tabla, 3000, 2 ) == true );
+   for( size_t i = 0; i < 5; ++i ){
+      HT_Insert( tabla, productos[ i ].bar_code, i );
+      //    HASH_TABLE       KEY                 IDX 
+   }
 
    print_table_hash( tabla );
 
