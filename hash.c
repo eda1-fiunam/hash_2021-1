@@ -51,6 +51,13 @@ typedef struct
 } Hash_table;
 
 
+/**
+ * @brief Crea una tabla hash.
+ *
+ * @param size El número de elementos en la tabla hash
+ *
+ * @return Referencia a una nueva tabla hash.
+ */
 Hash_table* HT_New( size_t size )
 {
    Hash_table* ht = ( Hash_table* )malloc( sizeof( Hash_table ) );
@@ -74,6 +81,13 @@ Hash_table* HT_New( size_t size )
    // el cliente es responsable de verificar que efectivamente la tabla se creó
 }
 
+/**
+ * @brief Destruye una tabla hash
+ *
+ * @param ht Referencia a una tabla hash
+ *
+ * @post La referencia ht es puesta a NULL
+ */
 void HT_Delete( Hash_table** ht )
 {
    assert( ht );
@@ -83,6 +97,29 @@ void HT_Delete( Hash_table** ht )
    *ht = NULL;
 }
 
+// Es la función hash
+int h( int key, int m )
+{
+   return key % m;
+}
+
+// es la función de resolución de colisiones
+int probe( int key, int i )
+{
+   return i + 1;
+}
+
+
+//----------------------------------------------------------------------
+// Driver program 
+//----------------------------------------------------------------------
+int main()
+{
+   Hash_table* tabla = HT_New( 17 );
+
+   HT_Delete( &tabla );
+   assert( tabla != NULL );
+}
 
 #if 0 
 /**
@@ -264,7 +301,3 @@ int main()
 }
 #endif  
 
-int main()
-{
-
-}
