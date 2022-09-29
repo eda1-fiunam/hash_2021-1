@@ -76,6 +76,30 @@ typedef struct
 } Hash_table;
 
 
+// Es la función hash
+static int h( int key, int m )
+{
+   return key % m;
+}
+
+static void print_table_hash( const Hash_table* ht )
+{
+   fprintf( stderr, "\nSize: %ld\n", ht->size );
+   fprintf( stderr, "Len: %ld\n", ht->len );
+   for( size_t i = 0; i < ht->size; ++i ){
+      fprintf( stderr, "[%02ld](%d, %d)\n", i, ht->table[ i ].key, ht->table[ i ].index );
+   }
+   fprintf( stderr, "\n" );
+}
+
+// es la función de resolución de colisiones
+static int probe( int key, int i )
+{
+   return i + 1;
+}
+
+
+
 /**
  * @brief Crea una tabla hash.
  *
@@ -124,28 +148,6 @@ void HT_Delete( Hash_table** ht )
    free( (*ht)->table );
    free( *ht );
    *ht = NULL;
-}
-
-// Es la función hash
-int h( int key, int m )
-{
-   return key % m;
-}
-
-static void print_table_hash( const Hash_table* ht )
-{
-   fprintf( stderr, "\nSize: %ld\n", ht->size );
-   fprintf( stderr, "Len: %ld\n", ht->len );
-   for( size_t i = 0; i < ht->size; ++i ){
-      fprintf( stderr, "[%02ld](%d, %d)\n", i, ht->table[ i ].key, ht->table[ i ].index );
-   }
-   fprintf( stderr, "\n" );
-}
-
-// es la función de resolución de colisiones
-int probe( int key, int i )
-{
-   return i + 1;
 }
 
 bool HT_Insert( Hash_table* ht, int32_t key, int32_t idx )
