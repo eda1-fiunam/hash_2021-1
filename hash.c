@@ -28,6 +28,21 @@
 //          Esta versión sólo soporta llaves (keys) enteras positivas.
 
 
+#ifndef PRINT_LEVEL
+#define PRINT_LEVEL 0
+#endif  
+
+#ifndef DBG_HELP
+#define DBG_HELP 1
+#endif  
+
+#if DBG_HELP > 0
+#define DBG_PRINT( ... ) do{ fprintf( stderr, "DBG:" __VA_ARGS__ ); } while( 0 )
+#else
+#define DBG_PRINT( ... ) ;
+#endif  
+
+
 enum
 { 
    NOT_FOUND = -3,
@@ -52,7 +67,9 @@ void Product_Print( Product* p )
 }
 
 
-
+/**
+ * Tupla ( key, index )
+ */
 typedef struct
 {
    /**
@@ -81,20 +98,27 @@ typedef struct
 } Hash_table;
 
 
+
+// for debugging purposes only!
+static void print_hash_table( const Hash_table* ht )
+{
+   printf( "----------------------------------------\n" ); 
+   printf( "HT.Size: %ld\n", ht->size );
+   printf( "HT.Len: %ld\n", ht->len );
+   printf( "HT.Table:\n" );
+   for( size_t i = 0; i < ht->size; ++i )
+   {
+      printf( "[%02ld](%d, %d)\n", i, ht->table[ i ].key, ht->table[ i ].index );
+   }
+   printf( "----------------------------------------\n\n" ); 
+}
+
+
+
 // Es la función hash
 static int h( int key, int m )
 {
    return key % m;
-}
-
-static void print_table_hash( const Hash_table* ht )
-{
-   fprintf( stderr, "\nSize: %ld\n", ht->size );
-   fprintf( stderr, "Len: %ld\n", ht->len );
-   for( size_t i = 0; i < ht->size; ++i ){
-      fprintf( stderr, "[%02ld](%d, %d)\n", i, ht->table[ i ].key, ht->table[ i ].index );
-   }
-   fprintf( stderr, "\n" );
 }
 
 // es la función de resolución de colisiones
@@ -115,18 +139,22 @@ static int probe( int key, int i )
 Hash_table* HT_New( size_t size )
 {
    Hash_table* ht = ( Hash_table* )malloc( sizeof( Hash_table ) );
-   if( NULL != ht ) {
+   if( NULL != ht )
+   {
 
       ht->len = 0;
       ht->size = size;
 
       ht->table = ( Table_entry* ) malloc( size * sizeof( Table_entry ) );
-      if( NULL == ht->table ){
+      if( NULL == ht->table )
+      {
 
          free( ht );
          ht = NULL;
 
-      } else {
+      }
+      else 
+      {
          for( int i = 0; i < ht->size; ++i ) {
 
             ht->table[ i ].index = EMPTY_CELL;
@@ -140,11 +168,11 @@ Hash_table* HT_New( size_t size )
 }
 
 /**
- * @brief Destruye una tabla hash
+ * @brief Destruye una tabla hash.
  *
- * @param ht Referencia a una tabla hash
+ * @param ht Referencia a una tabla hash.
  *
- * @post La referencia ht es puesta a NULL
+ * @post La referencia ht es puesta a NULL.
  */
 void HT_Delete( Hash_table** ht )
 {
@@ -155,6 +183,15 @@ void HT_Delete( Hash_table** ht )
    *ht = NULL;
 }
 
+/**
+ * @brief Inserta un elemento en la tabla hash.
+ *
+ * @param ht Referencia a una tabla hash.
+ * @param key El código de barras.
+ * @param idx El índice (de la tabla de datos) del elemento a ser insertado.
+ *
+ * @return 
+ */
 bool HT_Insert( Hash_table* ht, int32_t key, int32_t idx )
 {
    assert( ht );
@@ -166,7 +203,7 @@ bool HT_Insert( Hash_table* ht, int32_t key, int32_t idx )
    int home = pos = h( key, ht->size );
    // calcula una hash key base
 
-   fprintf( stderr, "Calculé el valor hash: %d para la llave: %d\n", pos, key );
+   DBG_PRINT( "Calculé el valor hash: %d para la llave: %d\n", pos, key );
    // información de depuración
 
 
@@ -174,16 +211,17 @@ bool HT_Insert( Hash_table* ht, int32_t key, int32_t idx )
 
    // si el slot está desocupado, se salta el while;
    // en caso contrario entra a buscar uno:
-   while( ht->table[ pos ].index >= 0 ){
-
+   while( ht->table[ pos ].index >= 0 )
+   {
       // no se aceptan duplicados:
-      if( ht->table[ pos ].key == key ){
-         fprintf( stderr, "Error: Llave duplicada\n" );
+      if( ht->table[ pos ].key == key )
+      {
+         DBG_PRINT( "Error: Llave duplicada\n" );
          return false;
       }
 
       pos = ( home + probe( key, i ) ) % ht->size;
-      fprintf( stderr, "Colisión. Recalculé el valor hash: %d para la llave: %d\n", pos, key );
+      DBG_PRINT( "Colisión. Recalculé el valor hash: %d para la llave: %d\n", pos, key );
 
       ++i;
       // el incremento de esta variable depende del método de resolución de
@@ -220,7 +258,7 @@ int32_t HT_Search( const Hash_table* ht, int32_t key )
    int home = h( key, ht->size );
    int pos = home;
 
-   fprintf( stderr, "Calculé el valor hash: %d para la llave: %d\n", pos, key );
+   DBG_PRINT( "Calculé el valor hash: %d para la llave: %d\n", pos, key );
 
    int i = 0;
 
@@ -229,12 +267,14 @@ int32_t HT_Search( const Hash_table* ht, int32_t key )
 
    // si la key en la celda coincide con la key buscada, se salta el while;
    // en caso contrario entra a buscar una coincidencia:
-   while( ht->table[ pos ].key != key ){    
-
+   while( ht->table[ pos ].key != key )
+   {    
       pos = ( home + probe( key, i ) ) % ht->size;
-      fprintf( stderr, "Celda ocupada: Recalculé el valor hash: %d para la llave: %d\n", pos, key );
+      DBG_PRINT( "Celda ocupada: Recalculé el valor hash: %d para la llave: %d\n", pos, key );
       
       ++i;
+      // el incremento de esta variable depende del método de resolución de
+      // colisiones utilizado
    }
 
    return( ht->table[ pos ].key == key ? ht->table[ pos ].index : NOT_FOUND );
@@ -250,7 +290,14 @@ bool HT_IsFull( const Hash_table* ht )
    return ht->len == ht->size;
 }
 
+float HT_LoadFactor( const Hash_table* ht )
+{
+   return 0.0;
+}
+
+#define HASH_TABLE_SIZE 7
 #define MAX_PRODUCTS 5
+
 
 //----------------------------------------------------------------------
 // Driver program 
@@ -259,14 +306,15 @@ int main()
 {
    Product productos[ MAX_PRODUCTS ] =
    {
-      { 1000, "Gansito", 9.0 },     // [0]
-      { 2000, "Crema", 16.5 },      // [1]
-      { 3000, "Arroz", 28.5 },      // ...
-      { 4000, "Papitas", 14.0 },
-      { 5000, "Detergente", 25.0 },
+      // Barcode  Name          Price         idx
+      { 1010,     "Gansito",     9.0 },    // [0]
+      { 2021,     "Crema",      16.5 },    // [1]
+      { 3032,     "Arroz",      28.5 },    // ...
+      { 4043,     "Papitas",    14.0 },
+      { 5054,     "Detergente", 25.0 },
    };
 
-   Hash_table* tabla = HT_New( 17 );
+   Hash_table* tabla = HT_New( HASH_TABLE_SIZE );
 
    assert( tabla );
    // el programa se detiene si la tabla no se pudo crear
@@ -274,20 +322,20 @@ int main()
    assert( HT_IsEmpty( tabla ) == true );
    // la tabla recién se creó, debe estar vacía
 
-//   print_table_hash( tabla );
+//   print_hash_table( tabla );
 
 
-   for( size_t i = 0; i < MAX_PRODUCTS && !HT_IsFull( tabla ); ++i ){
-
+   for( size_t i = 0; i < MAX_PRODUCTS && !HT_IsFull( tabla ); ++i )
+   {
       HT_Insert( 
          tabla,                   // tabla hash
          productos[ i ].bar_code, // key
          i );                     // idx
    }
 
-   print_table_hash( tabla );
+   print_hash_table( tabla );
 
-   int32_t idx = HT_Search( tabla, 5000 );
+   int32_t idx = HT_Search( tabla, 5054 );
    assert( idx == 4 ); // esperamos el índice 4
    Product_Print( &productos[ idx ] );
 
