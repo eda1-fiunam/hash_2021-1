@@ -28,7 +28,12 @@
 //          Esta versión sólo soporta llaves (keys) enteras positivas.
 
 
-enum{ EMPTY_CELL = -2, DELETED_CELL = -1 };
+enum
+{ 
+   NOT_FOUND = -3,
+   EMPTY_CELL = -2, 
+   DELETED_CELL = -1,
+};
 
 typedef struct
 {
@@ -201,8 +206,8 @@ bool HT_Insert( Hash_table* ht, int32_t key, int32_t idx )
  * @param key El código de barras
  *
  * @return El índice |idx| en la tabla de productos, o\n
- *         -1 si la celda calculada en la tabla hash está vacía, o\n
- *         -2 no se encontró
+ *         EMPTY_CELL si la celda calculada en la tabla hash está vacía, o\n
+ *         NOT_FOUND si no se encontró la llave
  *
  * @pre La tabla existe.
  * @pre La tabla no está vacía.
@@ -219,7 +224,7 @@ int32_t HT_Search( const Hash_table* ht, int32_t key )
 
    int i = 0;
 
-   if( ht->table[ pos ].index == EMPTY_CELL ) return -1;
+   if( ht->table[ pos ].index == EMPTY_CELL ) return EMPTY_CELL;
    // celda vacía: el producto no existe en la tabla hash
 
    // si la key en la celda coincide con la key buscada, se salta el while;
@@ -232,7 +237,7 @@ int32_t HT_Search( const Hash_table* ht, int32_t key )
       ++i;
    }
 
-   return( ht->table[ pos ].key == key ? ht->table[ pos ].index : -2 );
+   return( ht->table[ pos ].key == key ? ht->table[ pos ].index : NOT_FOUND );
 }
 
 bool HT_IsEmpty( const Hash_table* ht )
