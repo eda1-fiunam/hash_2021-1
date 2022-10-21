@@ -93,7 +93,7 @@ typedef struct
 typedef struct
 {
 	Table_entry* table; ///< Es la tabla hash
-	size_t  size;       ///< Es el número máximo de elementos en la tabla
+	size_t  size;       ///< Es el número máximo de elementos que la tabla puede almacenar
 	size_t  len;        ///< Es el número actual de elementos en la tabla
 } Hash_table;
 
@@ -116,13 +116,13 @@ static void print_hash_table( const Hash_table* ht )
 
 
 // Es la función hash
-static int h( int key, int m )
+static int32_t h( int32_t key, size_t m )
 {
    return key % m;
 }
 
 // es la función de resolución de colisiones
-static int probe( int key, int i )
+static int32_t probe( int32_t key, size_t i )
 {
    return i + 1;
 }
@@ -141,7 +141,6 @@ Hash_table* HT_New( size_t size )
    Hash_table* ht = ( Hash_table* )malloc( sizeof( Hash_table ) );
    if( NULL != ht )
    {
-
       ht->len = 0;
       ht->size = size;
 
@@ -151,12 +150,11 @@ Hash_table* HT_New( size_t size )
 
          free( ht );
          ht = NULL;
-
       }
       else 
       {
-         for( int i = 0; i < ht->size; ++i ) {
-
+         for( int i = 0; i < ht->size; ++i )
+         {
             ht->table[ i ].index = EMPTY_CELL;
             ht->table[ i ].key = 0;
          }
@@ -200,14 +198,14 @@ bool HT_Insert( Hash_table* ht, int32_t key, int32_t idx )
    int pos;
    // índice que se actualizará en cada colisión
 
-   int home = pos = h( key, ht->size );
+   int32_t home = pos = h( key, ht->size );
    // calcula una hash key base
 
    DBG_PRINT( "Calculé el valor hash: %d para la llave: %d\n", pos, key );
    // información de depuración
 
 
-   int i = 0;
+   size_t i = 0;
 
    // si el slot está desocupado, se salta el while;
    // en caso contrario entra a buscar uno:
@@ -221,11 +219,9 @@ bool HT_Insert( Hash_table* ht, int32_t key, int32_t idx )
       }
 
       pos = ( home + probe( key, i ) ) % ht->size;
-      DBG_PRINT( "Colisión. Recalculé el valor hash: %d para la llave: %d\n", pos, key );
-
       ++i;
-      // el incremento de esta variable depende del método de resolución de
-      // colisiones utilizado
+
+      DBG_PRINT( "Colisión. Recalculé el valor hash: %d para la llave: %d\n", pos, key );
    }
 
    ht->table[ pos ].key = key;
@@ -321,8 +317,6 @@ int main()
 
    assert( HT_IsEmpty( tabla ) == true );
    // la tabla recién se creó, debe estar vacía
-
-//   print_hash_table( tabla );
 
 
    for( size_t i = 0; i < MAX_PRODUCTS && !HT_IsFull( tabla ); ++i )
